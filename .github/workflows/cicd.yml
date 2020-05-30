@@ -1,0 +1,42 @@
+name: CI/CD pipeline
+env:
+  DOCKER_PROJECT_NAME: gevorgmartir
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build -t $DOCKER_PROJECT_NAME/proxy .
+
+      - name: Login registry
+        if: github.event_name == 'push'
+        run:
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Create a release
+        if: github.event_name == 'push'
+        id: release
+        uses: gevorg-martir/version-me@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish image
+        if: github.event_name == 'push' && steps.release.outputs.version-changed == 'true'
+        env:
+          releaseVersion: ${{ steps.release.outputs.new-version }}
+        run: |
+          docker tag $DOCKER_PROJECT_NAME/proxy $DOCKER_PROJECT_NAME/proxy:$releaseVersion
+          docker push $DOCKER_PROJECT_NAME/proxy:$releaseVersion
+          docker push $DOCKER_PROJECT_NAME/proxy:latest
