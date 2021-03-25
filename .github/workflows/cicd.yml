@@ -28,7 +28,7 @@ jobs:
       - name: Create a release
         if: github.event_name == 'push'
         id: release
-        uses: gevorg-martir/version-me@v1.0.0
+        uses: gevorg-martir/version-me@v2.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
